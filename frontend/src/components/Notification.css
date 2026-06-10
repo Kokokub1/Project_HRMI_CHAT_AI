@@ -1,0 +1,66 @@
+
+/* container */
+.toast {
+  position: fixed;
+  top: 20px;
+  right: 20px;
+
+  min-width: 260px;
+  max-width: 320px;
+
+  padding: 12px 15px;
+  border-radius: 12px;
+
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+
+  color: white;
+  font-size: 14px;
+
+  box-shadow: 0 10px 25px rgba(0,0,0,0.3);
+
+  animation: slideIn 0.3s ease;
+  z-index: 9999;
+}
+
+/* content */
+.toast-content {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+/* types */
+.toast.success {
+  background: linear-gradient(135deg, #10b981, #059669);
+}
+
+.toast.error {
+  background: linear-gradient(135deg, #ef4444, #dc2626);
+}
+
+.toast.warning {
+  background: linear-gradient(135deg, #f59e0b, #d97706);
+}
+
+/* close button */
+.toast button {
+  background: transparent;
+  border: none;
+  color: white;
+  cursor: pointer;
+  font-size: 16px;
+}
+
+/* animation */
+@keyframes slideIn {
+  from {
+    transform: translateX(120%);
+    opacity: 0;
+  }
+  to {
+    transform: translateX(0);
+    opacity: 1;
+  }
+}
