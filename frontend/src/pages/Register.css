@@ -11,21 +11,33 @@
 .register-container {
   width: 100%;
   min-height: 100vh;
+
   display: flex;
   justify-content: center;
   align-items: center;
-  background: linear-gradient(135deg, #0f172a, #1e293b, #312e81);
+
+  background: linear-gradient(
+    135deg,
+    #f0f9ff,
+    #e0f2fe,
+    #bae6fd,
+    #93c5fd
+  );
 }
 
 .register-card {
-  width: 400px;
-  padding: 35px;
-  border-radius: 20px;
-  background: rgba(255, 255, 255, 0.08);
-  backdrop-filter: blur(15px);
-  border: 1px solid rgba(255, 255, 255, 0.1);
-  box-shadow: 0 15px 40px rgba(0, 0, 0, 0.4);
-  color: white;
+  width: 420px;
+  padding: 40px;
+  border-radius: 25px;
+
+  background: rgba(255, 255, 255, 0.5);
+  backdrop-filter: blur(20px);
+
+  border: 1px solid rgba(255, 255, 255, 0.6);
+
+  box-shadow: 0 20px 50px rgba(0, 0, 0, 0.15);
+
+  color: #0f172a;
 }
 
 .register-header {
@@ -40,13 +52,14 @@
 }
 
 .register-header h1 {
-  font-size: 28px;
+  font-size: 30px;
   font-weight: 700;
+  color: #0f172a;
 }
 
 .register-header p {
   margin-top: 6px;
-  color: #cbd5e1;
+  color: #334155;
 }
 
 .input-group {
@@ -56,25 +69,32 @@
 .input-group label {
   display: block;
   margin-bottom: 6px;
-  color: #e2e8f0;
+
+  color: #0f172a;
+  font-weight: 600;
 }
 
 .input-box {
   display: flex;
   align-items: center;
   gap: 12px;
-  padding: 10px 15px;
-  border-radius: 12px;
-  background: rgba(255, 255, 255, 0.08);
-  border: 1px solid rgba(255, 255, 255, 0.08);
+
+  padding: 12px 15px;
+
+  border-radius: 14px;
+
+  background: rgba(255, 255, 255, 0.7);
+
+  border: 1px solid rgba(15, 23, 42, 0.08);
 }
 
 .input-box:focus-within {
-  border-color: #38bdf8;
+  border-color: #3b82f6;
+  box-shadow: 0 0 0 4px rgba(59, 130, 246, 0.15);
 }
 
 .input-box svg {
-  color: #94a3b8;
+  color: #475569;
 }
 
 .input-box input {
@@ -82,8 +102,13 @@
   border: none;
   outline: none;
   background: transparent;
-  color: white;
+
+  color: #0f172a;
   font-size: 14px;
+}
+
+.input-box input::placeholder {
+  color: #64748b;
 }
 
 .input-box input::placeholder {
@@ -93,10 +118,14 @@
 .eye-btn {
   border: none;
   background: transparent;
-  color: #94a3b8;
+  color: #475569;
   cursor: pointer;
   font-size: 18px;
 }
+
+.eye-btn:hover {
+  color: #2563eb;
+} 
 
 .eye-btn:hover {
   color: #38bdf8;
@@ -105,29 +134,40 @@
 .register-btn {
   width: 100%;
   padding: 14px;
+
   border: none;
-  border-radius: 12px;
-  background: linear-gradient(135deg, #06b6d4, #3b82f6, #8b5cf6);
+  border-radius: 14px;
+
+  background: linear-gradient(
+    135deg,
+    #06b6d4,
+    #3b82f6,
+    #8b5cf6
+  );
+
   color: white;
   font-size: 16px;
   font-weight: 600;
+
   cursor: pointer;
-  margin-top: 10px;
+  transition: 0.3s;
 }
 
 .register-btn:hover {
-  opacity: 0.9;
+  transform: translateY(-3px);
+  box-shadow: 0 10px 25px rgba(99, 102, 241, 0.35);
 }
 
 .login-link {
   margin-top: 20px;
   text-align: center;
-  color: #cbd5e1;
+  color: #334155;
 }
 
 .login-link a {
-  color: #38bdf8;
+  color: #2563eb;
   text-decoration: none;
+  font-weight: 600;
 }
 
 .login-link a:hover {

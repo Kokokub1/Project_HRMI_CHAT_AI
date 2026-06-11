@@ -11,6 +11,7 @@ import {
 import api from "../services/api";
 import "./Register.css";
 import Notification from "../components/Notification";
+import logo from "../assets/logo.png";
 
 export default function Register() {
   const [fullName, setFullName] = useState("");
@@ -125,7 +126,10 @@ export default function Register() {
       <div className="register-container">
         <div className="register-card">
           <div className="register-header">
-            <FaRobot className="robot-icon" />
+            <div className="logo"   
+                      style={{ display: "flex", justifyContent: "center" }}>
+                      <img src={logo} alt="Prosoft HRM Logo" style={{ width: "50%", height: "auto" }} />
+                </div>
             <h1>AI HRMI Assistant</h1>
             <p>สร้างบัญชีผู้ใช้งานใหม่</p>
           </div>

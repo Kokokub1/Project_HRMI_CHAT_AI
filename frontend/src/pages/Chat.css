@@ -8,7 +8,7 @@
 
 .sidebar{
     width:280px;
-    background:#0f172a;
+    background:#ffffff;
     color:white;
     display:flex;
     flex-direction:column;
@@ -54,11 +54,11 @@
   padding: 10px 12px;
   margin-bottom: 10px;
   border-radius: 6px;
-  background: rgb(255, 255, 255);
+  background: rgb(159, 215, 218);
   border: 1px solid rgba(255, 255, 255, 0.08);
   border-radius: 12px;
 
-  color: #0f172a;
+  color: #000000;
   font-size: 14px;
 
   transition: all 0.2s ease;

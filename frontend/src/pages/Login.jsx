@@ -8,6 +8,7 @@ import {
 
 import api from "../services/api";
 import "./Login.css";
+import logo from "../assets/logo.png";
 
 export default function Login() {
 
@@ -42,7 +43,10 @@ export default function Login() {
 
       <div className="login-card">
         <div className="logo-section">
-          <FaRobot className="robot-icon" />
+          <div className="logo"   
+          style={{ display: "flex", justifyContent: "center" }}>
+          <img src={logo} alt="Prosoft HRM Logo" style={{ width: "50%", height: "auto" }} />
+    </div>
 
           <h1>AI HRMI Assistant</h1>
 

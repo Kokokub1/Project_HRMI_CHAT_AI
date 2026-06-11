@@ -126,39 +126,35 @@ function findLatestVersion() {
 }
 
 // =========================
-// BUILD ANSWER
+// ASK OLLAMA
 // =========================
 
-function buildAnswer(question, docs) {
+async function askOllama(question, docs) {
 
-    const q = question.toLowerCase();
+    let context = "";
 
-    if (q.includes("version") || q.includes("เวอร์ชั่น")) {
-        const latest = findLatestVersion();
-        if (latest) {
-            return `📘 เวอร์ชั่นล่าสุดของ HRMI\n\nVersion ${latest.version}\n(Build ${latest.build})`;
-        }
+    if (docs && docs.length > 0) {
+        context = docs
+            .map(doc => `หัวข้อ: ${doc.topic}\nเนื้อหา: ${doc.content}`)
+            .join("\n\n");
     }
 
-    if (q.includes("ลา")) {
-        return `📘 สรุปขั้นตอนการลาในระบบ HRMI\n\n1. เข้าเมนู การลา\n2. เลือก เพิ่มรายการลา\n3. เลือกประเภทการลา\n• ลาป่วย\n• ลากิจ\n• ลาพักร้อน\n4. ระบุวันที่ลา\n5. ระบุเหตุผล\n6. กดบันทึก\n7. รอผู้อนุมัติ\n\nหากต้องการรายละเอียดเพิ่มเติม สามารถถาม:\n• ประเภทการลา\n• สิทธิการลา\n• การอนุมัติการลา`;
-    }
+    const systemPrompt = `คุณคือผู้ช่วยอัจฉริยะสำหรับโปรแกรม HRMI
+ตอบคำถามเกี่ยวกับการใช้งานระบบ HRMI เท่านั้น เช่น การลา, เงินเดือน, OT, ภาษี, ประกันสังคม
+ตอบเป็นภาษาไทยเสมอ ตอบกระชับและชัดเจน
 
-    if (q.includes("ot") || q.includes("โอที")) {
-        return `📘 สรุปขั้นตอนการขอ OT\n\n1. เข้าเมนู OT\n2. เลือก เพิ่มรายการ OT\n3. ระบุวันและเวลา\n4. ระบุเหตุผล\n5. กดบันทึก\n6. รอผู้อนุมัติ`;
-    }
+${context ? `ข้อมูลอ้างอิงจากคู่มือ HRMI:\n${context}` : "ไม่พบข้อมูลในคู่มือ ให้แจ้งผู้ใช้ว่าไม่มีข้อมูลในระบบ"}`;
 
-    if (!docs || docs.length === 0) {
-        return `ไม่พบข้อมูลที่เกี่ยวข้องในคู่มือ HRMI\n\nลองค้นหาด้วยคำว่า:\n• การลา\n• เงินเดือน\n• OT\n• ภาษี\n• ประกันสังคม`;
-    }
+    const res = await axios.post("http://localhost:11434/api/chat", {
+        model: "llama3",
+        stream: false,
+        messages: [
+            { role: "system", content: systemPrompt },
+            { role: "user", content: question }
+        ]
+    });
 
-    const best = docs[0];
-    let content = (best.content || "").replace(/\s+/g, " ").trim();
-    if (content.length > 500) {
-        content = content.substring(0, 500) + "...";
-    }
-
-    return `📘 ${best.topic}\n\n${content}`;
+    return res.data.message.content;
 }
 
 // =========================
@@ -322,9 +318,12 @@ router.post(
                 return res.status(400).json({ message: "กรุณาพิมพ์คำถาม" });
             }
 
+            // ค้นหาข้อมูลจาก knowledge base ก่อน
             const normalized = normalizeQuery(message);
             const docs = searchKnowledge(normalized, 3);
-            const answer = buildAnswer(message, docs);
+
+            // ส่งให้ Ollama ตอบโดยใช้ข้อมูลที่ค้นหาได้
+            const answer = await askOllama(message, docs);
 
             try {
 

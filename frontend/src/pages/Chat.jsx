@@ -1,7 +1,7 @@
 import { useEffect, useRef, useState } from "react";
 import api from "../services/api";
 import "./Chat.css";
-
+import logo from "../assets/logo.png";
 export default function Chat() {
 
   const [message, setMessage] = useState("");
@@ -243,10 +243,10 @@ export default function Chat() {
       <div className="sidebar">
 
         <div className="sidebar-top">
-
+          
           <div className="logo">
-            AI HRMI Assistant
-          </div>
+          <img src={logo} alt="Prosoft HRM Logo" style={{ width: "50%", height: "auto" }} />
+        </div>
 
           <button className="new-chat" onClick={newChat}>
             + New Chat
