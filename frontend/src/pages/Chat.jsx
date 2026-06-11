@@ -8,11 +8,26 @@ export default function Chat() {
   const [messages, setMessages] = useState([]);
   const [history, setHistory] = useState([]);
   const [loading, setLoading] = useState(false);
+  const [currentSessionId, setCurrentSessionId] = useState(null); // ✅ เก็บ session ปัจจุบัน
 
   const messagesEndRef = useRef(null);
 
   // =========================
-  // LOAD HISTORY
+  // GET USER ID FROM TOKEN
+  // =========================
+  const getUserId = () => {
+    const token = localStorage.getItem("token");
+    if (!token) return 0;
+    try {
+      const payload = JSON.parse(atob(token.split(".")[1]));
+      return payload.userId || payload.id || payload.sub || 0;
+    } catch {
+      return 0;
+    }
+  };
+
+  // =========================
+  // LOAD HISTORY (ตอน Login)
   // =========================
   const loadHistory = async () => {
 
@@ -25,35 +40,73 @@ export default function Chat() {
 
     try {
 
-      const res = await api.get("/chat/history");
+      const userId = getUserId();
+      const res = await api.get(`/chat/history?userId=${userId}`);
 
       if (!Array.isArray(res.data)) return;
 
       const formatted = res.data.map(item => ({
-        id: item.ChatID || item.Id,
-        Question: item.Message ?? "",
-        Answer: item.Response ?? ""
+        id: item.Id,
+        Question: item.Title ?? ""
       }));
 
-      // เก็บไว้ฝั่งซ้าย
       setHistory(formatted);
-
-      // หน้า Chat ว่างทุกครั้งที่ Login
       setMessages([]);
 
     } catch (err) {
 
-      console.error(
-        "LOAD HISTORY ERROR:",
-        err.response?.data || err.message
-      );
+      console.error("LOAD HISTORY ERROR:", err.response?.data || err.message);
 
       if (err.response?.status === 401) {
-
         localStorage.removeItem("token");
-
         window.location.href = "/";
       }
+    }
+  };
+
+  // =========================
+  // REFRESH HISTORY (หลัง Send)
+  // =========================
+  const refreshHistory = async () => {
+    try {
+
+      const userId = getUserId();
+      const res = await api.get(`/chat/history?userId=${userId}`);
+
+      if (!Array.isArray(res.data)) return;
+
+      const formatted = res.data.map(item => ({
+        id: item.Id,
+        Question: item.Title ?? ""
+      }));
+
+      setHistory(formatted); // ✅ อัพเดต sidebar เท่านั้น ไม่แตะ messages
+
+    } catch (err) {
+      console.error("REFRESH HISTORY ERROR:", err.response?.data || err.message);
+    }
+  };
+
+  // =========================
+  // LOAD SESSION MESSAGES (คลิก History)
+  // =========================
+  const loadSessionMessages = async (sessionId) => {
+    try {
+
+      const res = await api.get(`/chat/session/${sessionId}`);
+
+      if (!Array.isArray(res.data)) return;
+
+      const formatted = res.data.map(item => ({
+        Question: item.Message ?? "",
+        Answer: item.Response ?? ""
+      }));
+
+      setMessages(formatted);             // ✅ โหลดข้อความทั้งหมดใน session
+      setCurrentSessionId(sessionId);     // ✅ set session ปัจจุบัน
+
+    } catch (err) {
+      console.error("LOAD SESSION ERROR:", err.response?.data || err.message);
     }
   };
 
@@ -65,9 +118,7 @@ export default function Chat() {
   // AUTO SCROLL
   // =========================
   useEffect(() => {
-    messagesEndRef.current?.scrollIntoView({
-      behavior: "smooth"
-    });
+    messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
   }, [messages]);
 
   // =========================
@@ -79,22 +130,9 @@ export default function Chat() {
 
     const userMessage = message;
 
-    // แสดงทันทีในหน้ากลาง
     setMessages(prev => [
       ...prev,
-      {
-        Question: userMessage,
-        Answer: "..."
-      }
-    ]);
-
-    // เพิ่มเข้า History
-    setHistory(prev => [
-      {
-        Question: userMessage,
-        Answer: ""
-      },
-      ...prev
+      { Question: userMessage, Answer: "..." }
     ]);
 
     setMessage("");
@@ -102,65 +140,47 @@ export default function Chat() {
 
     try {
 
-      const token = localStorage.getItem("token");
+      const userId = getUserId();
 
-      let userId = 0;
+      // ✅ สร้าง session ใหม่ถ้ายังไม่มี (ข้อความแรกของ chat)
+      let sessionId = currentSessionId;
 
-      if (token) {
-
-        try {
-
-          const payload =
-            JSON.parse(atob(token.split(".")[1]));
-
-          userId =
-            payload.userId ||
-            payload.id ||
-            payload.sub ||
-            0;
-
-        } catch {
-
-          userId = 0;
-
-        }
+      if (!sessionId) {
+        const sessionRes = await api.post("/chat/session", {
+          userId,
+          title: userMessage
+        });
+        sessionId = sessionRes.data.sessionId;
+        setCurrentSessionId(sessionId);
       }
 
       const res = await api.post("/chat", {
         message: userMessage,
-        userId: userId
+        userId,
+        sessionId  // ✅ ส่ง sessionId ไปด้วยทุกครั้ง
       });
+
+      const answer = res.data.answer;
 
       setMessages(prev => {
-
         const updated = [...prev];
-
-        updated[updated.length - 1].Answer =
-          res.data.answer;
-
+        updated[updated.length - 1].Answer = answer;
         return updated;
-
       });
+
+      await refreshHistory();
 
     } catch (err) {
 
-      console.error(
-        "SEND ERROR:",
-        err.response?.data || err.message
-      );
+      console.error("SEND ERROR:", err.response?.data || err.message);
 
       if (err.response?.status === 401) {
-
         localStorage.removeItem("token");
-
         window.location.href = "/";
-
       }
 
     } finally {
-
       setLoading(false);
-
     }
   };
 
@@ -168,44 +188,52 @@ export default function Chat() {
   // NEW CHAT
   // =========================
   const newChat = () => {
-
     setMessages([]);
-
+    setCurrentSessionId(null); // ✅ reset session ให้สร้างใหม่ตอนพิมพ์
     localStorage.removeItem("currentChatId");
+  };
 
+  // =========================
+  // SELECT HISTORY
+  // =========================
+  const selectHistory = async (item) => {
+    await loadSessionMessages(item.id); // ✅ โหลดข้อความทั้งหมดของ session นั้น
   };
 
   // =========================
   // DELETE HISTORY
   // =========================
-  const deleteHistory = (index) => {
+  const deleteHistory = async (index) => {
 
-    const updated =
-      history.filter((_, i) => i !== index);
+    const item = history[index];
 
-    setHistory(updated);
+    try {
 
+      if (item.id) {
+        await api.delete(`/chat/session/${item.id}`); // ✅ ลบทั้ง session + messages
+      }
+
+      setHistory(prev => prev.filter((_, i) => i !== index));
+      setMessages([]);
+      setCurrentSessionId(null); // ✅ reset session
+
+    } catch (err) {
+      console.error("DELETE ERROR:", err.response?.data || err.message);
+      alert("ลบไม่สำเร็จ กรุณาลองใหม่");
+    }
   };
 
   // =========================
   // LOGOUT
   // =========================
   const logout = () => {
-
     localStorage.removeItem("token");
     localStorage.removeItem("currentChatId");
-
     window.location.href = "/";
-
   };
 
   const handleKeyDown = (e) => {
-
-    if (e.key === "Enter") {
-
-      sendMessage();
-
-    }
+    if (e.key === "Enter") sendMessage();
   };
 
   return (
@@ -217,13 +245,10 @@ export default function Chat() {
         <div className="sidebar-top">
 
           <div className="logo">
-            🤖 AI HRMI
+            AI HRMI Assistant
           </div>
 
-          <button
-            className="new-chat"
-            onClick={newChat}
-          >
+          <button className="new-chat" onClick={newChat}>
             + New Chat
           </button>
 
@@ -236,17 +261,18 @@ export default function Chat() {
             <div
               key={index}
               className="history-item"
+              style={{ cursor: "pointer" }}
+              onClick={() => selectHistory(msg)}
             >
 
-              <span>
-                {msg.Question}
-              </span>
+              <span>{msg.Question}</span>
 
               <button
                 className="delete-btn"
-                onClick={() =>
-                  deleteHistory(index)
-                }
+                onClick={(e) => {
+                  e.stopPropagation(); // ✅ กันไม่ให้ trigger selectHistory
+                  deleteHistory(index);
+                }}
               >
                 🗑️
               </button>
@@ -258,14 +284,9 @@ export default function Chat() {
         </div>
 
         <div className="sidebar-bottom">
-
-          <button
-            className="logout-btn"
-            onClick={logout}
-          >
+          <button className="logout-btn" onClick={logout}>
             Logout
           </button>
-
         </div>
 
       </div>
@@ -273,49 +294,30 @@ export default function Chat() {
       {/* Main */}
       <div className="chat-main">
 
-        <div className="chat-header">
-          🤖 AI HRMI Assistant
-        </div>
-
         <div className="chat-body">
 
           {messages.length === 0 && (
-
-            <div className="welcome">
-
-              <h1>
-                🤖 AI HRMI Assistant
-              </h1>
-
-              <p>
-                สอบถามระบบ HRMI ได้ตลอดเวลา
-              </p>
-
-            </div>
-
-          )}
+          <div className="welcome">
+            <h1 style={{ fontSize: "40px" }}>
+              สอบถามระบบ HRMI ได้ตลอดเวลา
+            </h1>
+        </div>
+    )}
 
           {messages.map((msg, index) => (
 
-            <div
-              key={index}
-              className="message"
-            >
+            <div key={index} className="message">
 
               <div className="user-row">
-
                 <div className="user-bubble">
                   {msg.Question}
                 </div>
-
               </div>
 
               <div className="ai-row">
-
                 <div className="ai-bubble">
                   {msg.Answer}
                 </div>
-
               </div>
 
             </div>
@@ -323,15 +325,11 @@ export default function Chat() {
           ))}
 
           {loading && (
-
             <div className="ai-row">
-
               <div className="ai-bubble">
                 🤖 กำลังค้นหาข้อมูล...
               </div>
-
             </div>
-
           )}
 
           <div ref={messagesEndRef} />
@@ -344,9 +342,7 @@ export default function Chat() {
 
             <input
               value={message}
-              onChange={(e) =>
-                setMessage(e.target.value)
-              }
+              onChange={(e) => setMessage(e.target.value)}
               onKeyDown={handleKeyDown}
               placeholder="พิมพ์คำถามเกี่ยวกับ HRMI..."
             />

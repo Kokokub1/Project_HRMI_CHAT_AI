@@ -45,16 +45,45 @@
     padding:10px;
 }
 
-.history-item{
-    padding:12px;
-    border-radius:10px;
-    margin-bottom:8px;
-    background:#1e293b;
-    cursor:pointer;
+.history-item {
+  display: flex;
+  align-items: center;
+  justify-content: space-between; /* ✅ ดันปุ่มลบไปชิดขวา */
+  gap: 8px;                       /* ✅ เพิ่มระยะห่างระหว่างข้อความกับปุ่ม */
+  cursor: pointer;
+  padding: 10px 12px;
+  margin-bottom: 10px;
+  border-radius: 6px;
+  background: rgb(255, 255, 255);
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  border-radius: 12px;
+
+  color: #0f172a;
+  font-size: 14px;
+
+  transition: all 0.2s ease;
 }
 
-.history-item:hover{
-    background:#334155;
+.history-item span {
+  flex: 1;           /* ✅ ให้ข้อความขยายเต็มพื้นที่ที่เหลือ */
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.delete-btn {
+  flex-shrink: 0;    /* ✅ ปุ่มไม่หด ติดขวาเสมอ */
+  opacity: 0;        /* ✅ ซ่อนไว้ก่อน แสดงเฉพาะตอน hover */
+  transition: opacity 0.2s;
+  background: none;
+  border: none;
+  cursor: pointer;
+  padding: 2px 4px;
+}
+
+/* ✅ แสดงปุ่มลบเฉพาะตอน hover เข้าไปใน item */
+.history-item:hover .delete-btn {
+  opacity: 1;
 }
 
 .sidebar-bottom{
@@ -102,7 +131,13 @@
 }
 
 .welcome h1{
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    height: 100vh;
+    text-align: center;
     color:#2563eb;
+    font-size:36px; 
     margin-bottom:10px;
 }
 

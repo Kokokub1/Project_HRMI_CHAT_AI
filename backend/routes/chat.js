@@ -20,10 +20,7 @@ try {
 
     knowledgeBase =
         JSON.parse(
-            fs.readFileSync(
-                kbPath,
-                "utf8"
-            )
+            fs.readFileSync(kbPath, "utf8")
         );
 
     console.log(
@@ -31,12 +28,7 @@ try {
     );
 
 } catch (err) {
-
-    console.error(
-        "❌ KB LOAD ERROR:",
-        err.message
-    );
-
+    console.error("❌ KB LOAD ERROR:", err.message);
 }
 
 // =========================
@@ -45,51 +37,33 @@ try {
 
 function normalizeQuery(query) {
 
-    const q =
-        query.toLowerCase();
+    const q = query.toLowerCase();
 
     if (
         q.includes("เวอร์ชั่น") ||
         q.includes("version") ||
         q.includes("what new") ||
         q.includes("new version")
-    ) {
-        return "version";
-    }
+    ) return "version";
 
     if (
         q.includes("ลา") ||
         q.includes("ลาป่วย") ||
         q.includes("ลากิจ") ||
         q.includes("ลาพักร้อน")
-    ) {
-        return "การลา";
-    }
+    ) return "การลา";
 
-    if (
-        q.includes("ot") ||
-        q.includes("โอที")
-    ) {
+    if (q.includes("ot") || q.includes("โอที"))
         return "ot";
-    }
 
-    if (
-        q.includes("เงินเดือน")
-    ) {
+    if (q.includes("เงินเดือน"))
         return "เงินเดือน";
-    }
 
-    if (
-        q.includes("ภาษี")
-    ) {
+    if (q.includes("ภาษี"))
         return "ภาษี";
-    }
 
-    if (
-        q.includes("ประกันสังคม")
-    ) {
+    if (q.includes("ประกันสังคม"))
         return "ประกันสังคม";
-    }
 
     return query;
 }
@@ -100,51 +74,26 @@ function normalizeQuery(query) {
 
 function searchKnowledge(query, topK = 3) {
 
-    const q =
-        query.toLowerCase();
+    const q = query.toLowerCase();
 
-    const results =
-        knowledgeBase
-            .map(doc => {
+    const results = knowledgeBase
+        .map(doc => {
 
-                const topic =
-                    (doc.topic || "")
-                        .toLowerCase();
+            const topic = (doc.topic || "").toLowerCase();
+            const content = (doc.content || "").toLowerCase();
 
-                const content =
-                    (doc.content || "")
-                        .toLowerCase();
+            let score = 0;
+            if (topic.includes(q)) score += 500;
+            if (content.includes(q)) score += 100;
 
-                let score = 0;
+            return { ...doc, score };
+        })
+        .filter(x => x.score > 0)
+        .sort((a, b) => b.score - a.score)
+        .slice(0, topK);
 
-                if (topic.includes(q))
-                    score += 500;
-
-                if (content.includes(q))
-                    score += 100;
-
-                return {
-                    ...doc,
-                    score
-                };
-
-            })
-            .filter(x => x.score > 0)
-            .sort(
-                (a, b) =>
-                    b.score - a.score
-            )
-            .slice(0, topK);
-
-    console.log(
-        "QUESTION =",
-        query
-    );
-
-    console.log(
-        "FOUND =",
-        results.length
-    );
+    console.log("QUESTION =", query);
+    console.log("FOUND =", results.length);
 
     return results;
 }
@@ -159,34 +108,18 @@ function findLatestVersion() {
 
     for (const doc of knowledgeBase) {
 
-        const text =
-            (doc.topic || "") +
-            " " +
-            (doc.content || "");
+        const text = (doc.topic || "") + " " + (doc.content || "");
+        const match = text.match(
+            /Version\s+([\d.]+)\s+\(Build\s+(\d+)\)/i
+        );
 
-        const match =
-            text.match(
-                /Version\s+([\d.]+)\s+\(Build\s+(\d+)\)/i
-            );
+        if (!match) continue;
 
-        if (!match)
-            continue;
+        const build = parseInt(match[2]);
 
-        const build =
-            parseInt(match[2]);
-
-        if (
-            !latest ||
-            build > latest.build
-        ) {
-
-            latest = {
-                version: match[1],
-                build
-            };
-
+        if (!latest || build > latest.build) {
+            latest = { version: match[1], build };
         }
-
     }
 
     return latest;
@@ -196,163 +129,75 @@ function findLatestVersion() {
 // BUILD ANSWER
 // =========================
 
-function buildAnswer(
-    question,
-    docs
-) {
+function buildAnswer(question, docs) {
 
-    const q =
-        question.toLowerCase();
+    const q = question.toLowerCase();
 
-    // =====================
-    // VERSION
-    // =====================
-
-    if (
-        q.includes("version") ||
-        q.includes("เวอร์ชั่น")
-    ) {
-
-        const latest =
-            findLatestVersion();
-
+    if (q.includes("version") || q.includes("เวอร์ชั่น")) {
+        const latest = findLatestVersion();
         if (latest) {
-
-            return `
-📘 เวอร์ชั่นล่าสุดของ HRMI
-
-Version ${latest.version}
-(Build ${latest.build})
-`;
-
+            return `📘 เวอร์ชั่นล่าสุดของ HRMI\n\nVersion ${latest.version}\n(Build ${latest.build})`;
         }
-
     }
 
-    // =====================
-    // LEAVE
-    // =====================
-
-    if (
-        q.includes("ลา")
-    ) {
-
-        return `
-📘 สรุปขั้นตอนการลาในระบบ HRMI
-
-1. เข้าเมนู การลา
-
-2. เลือก เพิ่มรายการลา
-
-3. เลือกประเภทการลา
-• ลาป่วย
-• ลากิจ
-• ลาพักร้อน
-
-4. ระบุวันที่ลา
-
-5. ระบุเหตุผล
-
-6. กดบันทึก
-
-7. รอผู้อนุมัติ
-
-หากต้องการรายละเอียดเพิ่มเติม สามารถถาม:
-
-• ประเภทการลา
-• สิทธิการลา
-• การอนุมัติการลา
-`;
-
+    if (q.includes("ลา")) {
+        return `📘 สรุปขั้นตอนการลาในระบบ HRMI\n\n1. เข้าเมนู การลา\n2. เลือก เพิ่มรายการลา\n3. เลือกประเภทการลา\n• ลาป่วย\n• ลากิจ\n• ลาพักร้อน\n4. ระบุวันที่ลา\n5. ระบุเหตุผล\n6. กดบันทึก\n7. รอผู้อนุมัติ\n\nหากต้องการรายละเอียดเพิ่มเติม สามารถถาม:\n• ประเภทการลา\n• สิทธิการลา\n• การอนุมัติการลา`;
     }
 
-    // =====================
-    // OT
-    // =====================
-
-    if (
-        q.includes("ot") ||
-        q.includes("โอที")
-    ) {
-
-        return `
-📘 สรุปขั้นตอนการขอ OT
-
-1. เข้าเมนู OT
-
-2. เลือก เพิ่มรายการ OT
-
-3. ระบุวันและเวลา
-
-4. ระบุเหตุผล
-
-5. กดบันทึก
-
-6. รอผู้อนุมัติ
-`;
-
+    if (q.includes("ot") || q.includes("โอที")) {
+        return `📘 สรุปขั้นตอนการขอ OT\n\n1. เข้าเมนู OT\n2. เลือก เพิ่มรายการ OT\n3. ระบุวันและเวลา\n4. ระบุเหตุผล\n5. กดบันทึก\n6. รอผู้อนุมัติ`;
     }
 
-    // =====================
-    // NOT FOUND
-    // =====================
-
-    if (
-        !docs ||
-        docs.length === 0
-    ) {
-
-        return `
-ไม่พบข้อมูลที่เกี่ยวข้องในคู่มือ HRMI
-
-ลองค้นหาด้วยคำว่า:
-
-• การลา
-• เงินเดือน
-• OT
-• ภาษี
-• ประกันสังคม
-`;
-
+    if (!docs || docs.length === 0) {
+        return `ไม่พบข้อมูลที่เกี่ยวข้องในคู่มือ HRMI\n\nลองค้นหาด้วยคำว่า:\n• การลา\n• เงินเดือน\n• OT\n• ภาษี\n• ประกันสังคม`;
     }
 
-    // =====================
-    // DEFAULT
-    // =====================
-
-    const best =
-        docs[0];
-
-    let content =
-        best.content || "";
-
-    content =
-        content
-            .replace(/\s+/g, " ")
-            .trim();
-
-    if (
-        content.length > 500
-    ) {
-
-        content =
-            content.substring(
-                0,
-                500
-            ) + "...";
-
+    const best = docs[0];
+    let content = (best.content || "").replace(/\s+/g, " ").trim();
+    if (content.length > 500) {
+        content = content.substring(0, 500) + "...";
     }
 
-    return `
-📘 ${best.topic}
-
-${content}
-`;
-
+    return `📘 ${best.topic}\n\n${content}`;
 }
 
 // =========================
-// HISTORY
+// CREATE SESSION
+// =========================
+
+router.post(
+    "/session",
+    async (req, res) => {
+
+        try {
+
+            const { userId, title } = req.body;
+
+            const pool = await sql.connect();
+
+            const result = await pool.request()
+                .input("userId", sql.Int, userId || 0)
+                .input("title", sql.NVarChar(500), title || "New Chat")
+                .query(`
+                    INSERT INTO ChatSessions (UserId, Title)
+                    OUTPUT INSERTED.Id
+                    VALUES (@userId, @title)
+                `);
+
+            const sessionId = result.recordset[0].Id;
+
+            res.json({ sessionId });
+
+        } catch (err) {
+            console.error("CREATE SESSION ERROR:", err.message);
+            res.status(500).json({ message: err.message });
+        }
+
+    }
+);
+
+// =========================
+// GET ALL SESSIONS (HISTORY)
 // =========================
 
 router.get(
@@ -361,36 +206,101 @@ router.get(
 
         try {
 
-            const pool =
-                await sql.connect();
+            const userId = req.query.userId;
 
-            const result =
-                await pool.request()
-                    .query(`
-                        SELECT TOP 50
-                            Message,
-                            Response,
-                            CreatedAt
-                        FROM ChatHistory
-                        ORDER BY CreatedAt DESC
-                    `);
+            const pool = await sql.connect();
+            const request = pool.request();
 
-            res.json(
-                result.recordset.reverse()
-            );
+            let query = `
+                SELECT TOP 50 Id, Title, CreatedAt
+                FROM ChatSessions
+            `;
+
+            if (userId) {
+                request.input("userId", sql.Int, parseInt(userId));
+                query += ` WHERE UserId = @userId`;
+            }
+
+            query += ` ORDER BY CreatedAt DESC`;
+
+            const result = await request.query(query);
+
+            res.json(result.recordset);
 
         } catch (err) {
+            console.error(err.message);
+            res.status(500).json({ message: err.message });
+        }
 
-            console.error(
-                err.message
-            );
+    }
+);
 
-            res.status(500)
-                .json({
-                    message:
-                        err.message
-                });
+// =========================
+// GET MESSAGES IN SESSION
+// =========================
 
+router.get(
+    "/session/:id",
+    async (req, res) => {
+
+        try {
+
+            const sessionId = parseInt(req.params.id);
+
+            const pool = await sql.connect();
+
+            const result = await pool.request()
+                .input("sessionId", sql.Int, sessionId)
+                .query(`
+                    SELECT Id, Message, Response, CreatedAt
+                    FROM ChatHistory
+                    WHERE SessionId = @sessionId
+                    ORDER BY CreatedAt ASC
+                `);
+
+            res.json(result.recordset);
+
+        } catch (err) {
+            console.error(err.message);
+            res.status(500).json({ message: err.message });
+        }
+
+    }
+);
+
+// =========================
+// DELETE SESSION + MESSAGES
+// =========================
+
+router.delete(
+    "/session/:id",
+    async (req, res) => {
+
+        try {
+
+            const sessionId = parseInt(req.params.id);
+
+            if (!sessionId) {
+                return res.status(400).json({ message: "Invalid session ID" });
+            }
+
+            const pool = await sql.connect();
+
+            // ลบ messages ก่อน
+            await pool.request()
+                .input("sessionId", sql.Int, sessionId)
+                .query("DELETE FROM ChatHistory WHERE SessionId = @sessionId");
+
+            // แล้วค่อยลบ session
+            await pool.request()
+                .input("sessionId", sql.Int, sessionId)
+                .query("DELETE FROM ChatSessions WHERE Id = @sessionId");
+
+            res.json({ message: "ลบสำเร็จ" });
+
+        } catch (err) {
+            console.error("DELETE SESSION ERROR:", err.message);
+            res.status(500).json({ message: err.message });
         }
 
     }
@@ -406,107 +316,39 @@ router.post(
 
         try {
 
-            const {
-                message,
-                userId
-            } = req.body;
+            const { message, userId, sessionId } = req.body;
 
-            if (
-                !message ||
-                !message.trim()
-            ) {
-
-                return res.status(400)
-                    .json({
-                        message:
-                            "กรุณาพิมพ์คำถาม"
-                    });
-
+            if (!message || !message.trim()) {
+                return res.status(400).json({ message: "กรุณาพิมพ์คำถาม" });
             }
 
-            const normalized =
-                normalizeQuery(
-                    message
-                );
-
-            const docs =
-                searchKnowledge(
-                    normalized,
-                    3
-                );
-
-            const answer =
-                buildAnswer(
-                    message,
-                    docs
-                );
+            const normalized = normalizeQuery(message);
+            const docs = searchKnowledge(normalized, 3);
+            const answer = buildAnswer(message, docs);
 
             try {
 
-                const pool =
-                    await sql.connect();
+                const pool = await sql.connect();
 
                 await pool.request()
-
-                    .input(
-                        "userId",
-                        sql.Int,
-                        userId || 1
-                    )
-
-                    .input(
-                        "message",
-                        sql.NVarChar(sql.MAX),
-                        message
-                    )
-
-                    .input(
-                        "response",
-                        sql.NVarChar(sql.MAX),
-                        answer
-                    )
-
+                    .input("userId", sql.Int, userId || 1)
+                    .input("message", sql.NVarChar(sql.MAX), message)
+                    .input("response", sql.NVarChar(sql.MAX), answer)
+                    .input("sessionId", sql.Int, sessionId || null)
                     .query(`
-                        INSERT INTO ChatHistory
-                        (
-                            UserId,
-                            Message,
-                            Response
-                        )
-                        VALUES
-                        (
-                            @userId,
-                            @message,
-                            @response
-                        )
+                        INSERT INTO ChatHistory (UserId, Message, Response, SessionId)
+                        VALUES (@userId, @message, @response, @sessionId)
                     `);
 
             } catch (dbErr) {
-
-                console.error(
-                    "DB SAVE ERROR:",
-                    dbErr.message
-                );
-
+                console.error("DB SAVE ERROR:", dbErr.message);
             }
 
-            res.json({
-                answer
-            });
+            res.json({ answer });
 
         } catch (err) {
-
-            console.error(
-                "CHAT ERROR:",
-                err.message
-            );
-
-            res.status(500)
-                .json({
-                    message:
-                        err.message
-                });
-
+            console.error("CHAT ERROR:", err.message);
+            res.status(500).json({ message: err.message });
         }
 
     }
